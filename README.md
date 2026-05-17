@@ -13,3 +13,9 @@ Zabawa z optymalizacją.
  5b. Temperature value: non null double between -99.9 (inclusive) and 99.9 (inclusive), always with one fractional digit
  
 Czas referencyjny: 4m 13.449s
+
+## Zewnętrzne zależności
+
+Pliki potrzebne do stworzenia input.txt
+https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py - nieznacznie zmodyfikowany, żeby działać ze strukturą projektu i obsługiwać utf-8
+https://github.com/gunnarmorling/1brc/blob/main/data/weather_stations.csv
