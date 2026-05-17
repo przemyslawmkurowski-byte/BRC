@@ -1,0 +1,10 @@
+Helsinki;-9.9
+Nkheila;-38.8
+Helsinki;-72.0
+Satravāda;-24.8
+Satravāda;23.5
+Helsinki;-82.1
+Nkheila;-71.3
+Helsinki;-56.4
+Nkheila;-6.5
+Satravāda;50.7
