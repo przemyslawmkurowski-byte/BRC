@@ -66,9 +66,15 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 		}
 	}
 	
-	for(auto row : Data)
+	// sort
+	TArray<FString> SortedKeys;
+	Data.GetKeys(SortedKeys);
+	SortedKeys.Sort();
+	
+	for (auto key : SortedKeys)
 	{
-		UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *row.Key, row.Value.min, row.Value.avg, row.Value.max);
+		FBRCStruct_Naive* row = Data.Find(key);
+		UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *key, row->min, row->avg, row->max);
 	}
 	
 	File->Close();
