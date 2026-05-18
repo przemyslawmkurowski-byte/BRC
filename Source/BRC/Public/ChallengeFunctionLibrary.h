@@ -30,4 +30,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static void BRC_Naive(const FString& InInputName);
 	
+	// Using Load File To String Array. Should massively increase RAM usage, checking how it will affect CPU usage
+	UFUNCTION(BlueprintCallable)
+    static void BRC_LFTSA(const FString& InInputName);
+	
+	// separate TMAP<Station, index> and array< FBRCStruct_Naive
+	UFUNCTION(BlueprintCallable)
+	static void BRC_TSI(const FString& InInputName);
+	
+	// prereserved array size
+	UFUNCTION(BlueprintCallable)
+    static void BRC_TSI_PAS(const FString& InInputName);
 };

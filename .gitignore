@@ -79,3 +79,4 @@ DerivedDataCache/*
 
 # data file - too big to handle it with Git
 Content/Data/input.txt
+Content/Data/short.txt
