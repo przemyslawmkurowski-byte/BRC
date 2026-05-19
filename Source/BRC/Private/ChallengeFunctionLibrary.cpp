@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "ChallengeFunctionLibrary.h"
 
 void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
@@ -17,7 +16,231 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 	// Prepare RET
 	TMap<FString, FBRCStruct_Naive> Data;
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Reading data"));
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read File >> Data"));
+		
+		// 100 bytes, plus termination symbol
+		constexpr int BufferSize = 101;
+		ANSICHAR Buffer[BufferSize];
+		// buffer is null-terminated, so making last character null should work just fine
+		Buffer[0] = 0;
+		int BufferIndex = 0;
+		ANSICHAR Expected = ';';	// double-use as Stage flag
+		
+		FString Station;	// need to keep this one through Loop iterations
+
+		while(!File->AtEnd())
+		{
+			ANSICHAR Byte;
+			{
+				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read byte"));
+				// this line stream from File to byte. Do not ask.
+				*File << Byte;
+			}
+			
+			if(Byte != Expected)	// EARLY EXIT
+			{
+				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
+				Buffer[BufferIndex] = Byte;
+				++BufferIndex;
+				continue;
+			}
+			
+			//at this point we are sure Byte == Expected
+			if (Expected == ';')
+			{
+			    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to FString"));
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				Station = UTF8_TO_TCHAR(Buffer);
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = '\n';
+			}
+			else // there are only two options - either expected is ; or \n
+			{
+				double Value;
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to value"));
+					Buffer[BufferIndex] = 0; // Add termination marker to buffer
+					Value = FCStringAnsi::Atof(Buffer);
+					Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+					BufferIndex = 0;
+					Expected = ';';
+				}
+					
+				//here add value to TMap
+				FBRCStruct_Naive* row;
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"))
+					row = Data.Find(Station);
+				}
+				
+				if (row != nullptr)
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalculate value"));
+					row->min = row->min < Value ? row->min : Value;
+					row->max = row->max > Value ? row->max : Value;
+					row->avg = (row->avg * row->count + Value) / (row->count + 1);
+					row->count = row->count + 1; 
+				}
+				else
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
+					Data.Add(Station, FBRCStruct_Naive(Value));
+				}
+			}
+		}
+	}	
+			
+	// sort
+	TArray<FString> SortedKeys;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Sorting data"));
+		Data.GetKeys(SortedKeys);
+		SortedKeys.Sort();
+	}
+	
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Printing data"));
+		for (auto key : SortedKeys)
+		{
+			FBRCStruct_Naive* row = Data.Find(key);
+			UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *key, row->min, row->avg, row->max);
+		}
+	}
+	
+	File->Close();
+	delete File;
+}
+
+void UChallengeFunctionLibrary::BRC_Name(const FString& InInputName)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UChallengeFunctionLibrary::BRC_Name"));
+	// open file
+	FArchive* File;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Open file"));
+		const FString Path = FPaths::ProjectContentDir() + TEXT("Data/") + InInputName;
+		File = IFileManager::Get().CreateFileReader(*Path);
+	}
+	
+	// Prepare RET
+	TMap<FName, FBRCStruct_Naive> Data;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read File >> Data"));
+		
+		// 100 bytes, plus termination symbol
+		constexpr int BufferSize = 101;
+		ANSICHAR Buffer[BufferSize];
+		// buffer is null-terminated, so making last character null should work just fine
+		Buffer[0] = 0;
+		int BufferIndex = 0;
+		ANSICHAR Expected = ';';	// double-use as Stage flag
+		
+		FName Station;	// need to keep this one through Loop iterations
+
+		while(!File->AtEnd())
+		{
+			ANSICHAR Byte;
+			{
+				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read byte"));
+				// this line stream from File to byte. Do not ask.
+				*File << Byte;
+			}
+			
+			if(Byte != Expected)	// EARLY EXIT
+			{
+				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
+				Buffer[BufferIndex] = Byte;
+				++BufferIndex;
+				continue;
+			}
+			
+			//at this point we are sure Byte == Expected
+			if (Expected == ';')
+			{
+			    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Name::Buffer to FName"));
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				Station = UTF8_TO_TCHAR(Buffer);
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = '\n';
+			}
+			else // there are only two options - either expected is ; or \n
+			{
+				double Value;
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to value"));
+					Buffer[BufferIndex] = 0; // Add termination marker to buffer
+					Value = FCStringAnsi::Atof(Buffer);
+					Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+					BufferIndex = 0;
+					Expected = ';';
+				}
+					
+				//here add value to TMap
+				FBRCStruct_Naive* row = nullptr;
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"))
+					row = Data.Find(Station);
+				}
+				
+				if (row != nullptr)
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalculate value"));
+					row->min = row->min < Value ? row->min : Value;
+					row->max = row->max > Value ? row->max : Value;
+					row->avg = (row->avg * row->count + Value) / (row->count + 1);
+					row->count = row->count + 1; 
+				}
+				else
+				{
+					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
+					Data.Add(Station, FBRCStruct_Naive(Value));
+				}
+			}
+		}
+	}	
+			
+	// sort
+	TArray<FName> SortedKeys;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Name::Sorting data"));
+		Data.GetKeys(SortedKeys);
+		SortedKeys.Sort(
+			[](const FName& A, const FName& B)
+			{
+				return A.ToString() < B.ToString();
+			});
+	}
+	
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Printing data"));
+		for (auto key : SortedKeys)
+		{
+			FBRCStruct_Naive* row = Data.Find(key);
+			UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *key.ToString(), row->min, row->avg, row->max);
+		}
+	}
+	
+	File->Close();
+	delete File;
+}
+
+void UChallengeFunctionLibrary::BRC_Chunk(const FString& InInputName)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UChallengeFunctionLibrary::BRC_Chunk"));
+	// open file
+	FArchive* File;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Open file"));
+		const FString Path = FPaths::ProjectContentDir() + TEXT("Data/") + InInputName;
+		File = IFileManager::Get().CreateFileReader(*Path);
+	}
+	
+	// Prepare RET
+	TMap<FString, FBRCStruct_Naive> Data;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Chunk::Reading data"));
 		
 		// flag. false == waiting for ;, true == waiting for newline
 		bool flag = false;
@@ -30,61 +253,70 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 	
 		FString Station;
 		
+		constexpr int ChunkMaxSize = 200;
+		ANSICHAR Chunk[ChunkMaxSize];
+		int ChunkActualSize = 0;
+		
 		while(!File->AtEnd())
 		{
-			ANSICHAR byte;
 			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read byte"));
-				// this line stream from File to byte. Do not ask.
-				*File << byte;
+				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read bytes"));
+				int BytesToEoF = File->TotalSize() - File->Tell();
+				ChunkActualSize = BytesToEoF < ChunkMaxSize ? BytesToEoF : ChunkMaxSize;
+				File->Serialize(Chunk, ChunkActualSize);
 			}
-		
-			if (!flag && byte == ';')
-			{
-				buffer[bufferIndex] = 0;
-				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to string"));
-					Station = UTF8_TO_TCHAR(buffer);
-				}
-				buffer[0] = 0;
-				bufferIndex = 0;
-				flag = true;
-			}
-			else if (flag && byte == '\n')
-			{
-				buffer[bufferIndex] = 0;
-				double candidate;
-				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to number"));
-					candidate = FCStringAnsi::Atof(buffer);
-				}
-				buffer[0] = 0;
-				bufferIndex = 0;
-				flag = false;
 			
-				//here add value to TMap
+			for (int i = 0; i < ChunkActualSize; ++i)
+			{
+				char byte = Chunk[i];
+		
+				if (!flag && byte == ';')
 				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"));
-					if (FBRCStruct_Naive* row = Data.Find(Station))
+					buffer[bufferIndex] = 0;
 					{
-						TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalc old value"));
-						row->min = row->min < candidate ? row->min : candidate;
-						row->max = row->max > candidate ? row->max : candidate;
-						row->avg = (row->avg * row->count + candidate) / (row->count + 1);
-						row->count = row->count + 1; 
+						//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to string"));
+						Station = UTF8_TO_TCHAR(buffer);
 					}
-					else
+					buffer[0] = 0;
+					bufferIndex = 0;
+					flag = true;
+				}
+				else if (flag && byte == '\n')
+				{
+					buffer[bufferIndex] = 0;
+					double candidate;
 					{
-						TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
-						Data.Add(Station, FBRCStruct_Naive(candidate));
+						//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to number"));
+						candidate = FCStringAnsi::Atof(buffer);
+					}
+					buffer[0] = 0;
+					bufferIndex = 0;
+					flag = false;
+			
+					//here add value to TMap
+					{
+						//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"));
+						if (FBRCStruct_Naive* row = Data.Find(Station))
+						{
+							//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalc old value"));
+							row->min = row->min < candidate ? row->min : candidate;
+							row->max = row->max > candidate ? row->max : candidate;
+							row->avg = (row->avg * row->count + candidate) / (row->count + 1);
+							row->count = row->count + 1; 
+						}
+						else
+						{
+							//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
+							Data.Add(Station, FBRCStruct_Naive(candidate));
+						}
 					}
 				}
-			}
-			else
-			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
-				buffer[bufferIndex] = byte;
-				++bufferIndex;
+				else
+				{
+					//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
+					buffer[bufferIndex] = byte;
+					++bufferIndex;
+				}
 			}
 		}
 	}

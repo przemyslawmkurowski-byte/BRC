@@ -30,6 +30,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static void BRC_Naive(const FString& InInputName);
 	
+	// Use FName instead of FString, as key for TMap
+	UFUNCTION(BlueprintCallable)
+	static void BRC_Name(const FString& InInputName);
+	
+	// Load 4096 bytes at once. Should give CPU more time between calls to hard disc.
+    UFUNCTION(BlueprintCallable)
+    static void BRC_Chunk(const FString& InInputName);
+	
 	// Using Load File To String Array. Should massively increase RAM usage, checking how it will affect CPU usage
 	UFUNCTION(BlueprintCallable)
     static void BRC_LFTSA(const FString& InInputName);
