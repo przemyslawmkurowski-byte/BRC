@@ -31,15 +31,11 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 		while(!File->AtEnd())
 		{
 			ANSICHAR Byte;
-			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read byte"));
-				// this line stream from File to byte. Do not ask.
-				*File << Byte;
-			}
+			// this line stream from File to byte. Do not ask.
+			*File << Byte;
 			
 			if(Byte != Expected)	// EARLY EXIT
 			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
 				Buffer[BufferIndex] = Byte;
 				++BufferIndex;
 				continue;
@@ -48,7 +44,6 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 			//at this point we are sure Byte == Expected
 			if (Expected == ';')
 			{
-			    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to FString"));
 				Buffer[BufferIndex] = 0; // Add termination marker to buffer
 				Station = UTF8_TO_TCHAR(Buffer);
 				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
@@ -57,26 +52,16 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 			}
 			else // there are only two options - either expected is ; or \n
 			{
-				double Value;
-				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to value"));
-					Buffer[BufferIndex] = 0; // Add termination marker to buffer
-					Value = FCStringAnsi::Atof(Buffer);
-					Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
-					BufferIndex = 0;
-					Expected = ';';
-				}
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				double Value = FCStringAnsi::Atof(Buffer);
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = ';';
 					
 				//here add value to TMap
-				FBRCStruct_Naive* row;
-				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"))
-					row = Data.Find(Station);
-				}
-				
+				FBRCStruct_Naive* row = Data.Find(Station);
 				if (row != nullptr)
 				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalculate value"));
 					row->min = row->min < Value ? row->min : Value;
 					row->max = row->max > Value ? row->max : Value;
 					row->avg = (row->avg * row->count + Value) / (row->count + 1);
@@ -84,7 +69,6 @@ void UChallengeFunctionLibrary::BRC_Naive(const FString& InInputName)
 				}
 				else
 				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
 					Data.Add(Station, FBRCStruct_Naive(Value));
 				}
 			}
@@ -141,15 +125,11 @@ void UChallengeFunctionLibrary::BRC_Name(const FString& InInputName)
 		while(!File->AtEnd())
 		{
 			ANSICHAR Byte;
-			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read byte"));
-				// this line stream from File to byte. Do not ask.
-				*File << Byte;
-			}
+			// this line stream from File to byte. Do not ask.
+			*File << Byte;
 			
 			if(Byte != Expected)	// EARLY EXIT
 			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
 				Buffer[BufferIndex] = Byte;
 				++BufferIndex;
 				continue;
@@ -158,7 +138,6 @@ void UChallengeFunctionLibrary::BRC_Name(const FString& InInputName)
 			//at this point we are sure Byte == Expected
 			if (Expected == ';')
 			{
-			    TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Name::Buffer to FName"));
 				Buffer[BufferIndex] = 0; // Add termination marker to buffer
 				Station = UTF8_TO_TCHAR(Buffer);
 				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
@@ -167,26 +146,17 @@ void UChallengeFunctionLibrary::BRC_Name(const FString& InInputName)
 			}
 			else // there are only two options - either expected is ; or \n
 			{
-				double Value;
-				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to value"));
-					Buffer[BufferIndex] = 0; // Add termination marker to buffer
-					Value = FCStringAnsi::Atof(Buffer);
-					Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
-					BufferIndex = 0;
-					Expected = ';';
-				}
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				double Value = FCStringAnsi::Atof(Buffer);
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = ';';
 					
 				//here add value to TMap
-				FBRCStruct_Naive* row = nullptr;
-				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"))
-					row = Data.Find(Station);
-				}
+				FBRCStruct_Naive* row = row = Data.Find(Station);
 				
 				if (row != nullptr)
 				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalculate value"));
 					row->min = row->min < Value ? row->min : Value;
 					row->max = row->max > Value ? row->max : Value;
 					row->avg = (row->avg * row->count + Value) / (row->count + 1);
@@ -194,7 +164,6 @@ void UChallengeFunctionLibrary::BRC_Name(const FString& InInputName)
 				}
 				else
 				{
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
 					Data.Add(Station, FBRCStruct_Naive(Value));
 				}
 			}
@@ -242,80 +211,68 @@ void UChallengeFunctionLibrary::BRC_Chunk(const FString& InInputName)
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Chunk::Reading data"));
 		
-		// flag. false == waiting for ;, true == waiting for newline
-		bool flag = false;
 		// 100 bytes, plus termination symbol
-		constexpr int bufferSize = 101;
-		ANSICHAR buffer[bufferSize];
+		constexpr int BufferSize = 101;
+		ANSICHAR Buffer[BufferSize];
 		// buffer is null-terminated, so making last character null should work just fine
-		buffer[0] = 0;
-		int bufferIndex = 0;
+		Buffer[0] = 0;
+		int BufferIndex = 0;
+		ANSICHAR Expected = ';';	// double-use as Stage flag
 	
 		FString Station;
 		
-		constexpr int ChunkMaxSize = 200;
+		constexpr int ChunkMaxSize = 4096;
 		ANSICHAR Chunk[ChunkMaxSize];
 		int ChunkActualSize = 0;
 		
 		while(!File->AtEnd())
 		{
-			{
-				TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read bytes"));
-				int BytesToEoF = File->TotalSize() - File->Tell();
-				ChunkActualSize = BytesToEoF < ChunkMaxSize ? BytesToEoF : ChunkMaxSize;
-				File->Serialize(Chunk, ChunkActualSize);
-			}
+			const int BytesToEoF = File->TotalSize() - File->Tell();
+			ChunkActualSize = BytesToEoF < ChunkMaxSize ? BytesToEoF : ChunkMaxSize;
+			File->Serialize(Chunk, ChunkActualSize);
 			
 			for (int i = 0; i < ChunkActualSize; ++i)
 			{
-				char byte = Chunk[i];
-		
-				if (!flag && byte == ';')
-				{
-					buffer[bufferIndex] = 0;
-					{
-						//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to string"));
-						Station = UTF8_TO_TCHAR(buffer);
-					}
-					buffer[0] = 0;
-					bufferIndex = 0;
-					flag = true;
-				}
-				else if (flag && byte == '\n')
-				{
-					buffer[bufferIndex] = 0;
-					double candidate;
-					{
-						//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Buffer to number"));
-						candidate = FCStringAnsi::Atof(buffer);
-					}
-					buffer[0] = 0;
-					bufferIndex = 0;
-					flag = false;
+				ANSICHAR Byte = Chunk[i];
 			
-					//here add value to TMap
-					{
-						//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Find row"));
-						if (FBRCStruct_Naive* row = Data.Find(Station))
-						{
-							//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Recalc old value"));
-							row->min = row->min < candidate ? row->min : candidate;
-							row->max = row->max > candidate ? row->max : candidate;
-							row->avg = (row->avg * row->count + candidate) / (row->count + 1);
-							row->count = row->count + 1; 
-						}
-						else
-						{
-							//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add new value"));
-							Data.Add(Station, FBRCStruct_Naive(candidate));
-						}
-					}
-				}
-				else
+				if(Byte != Expected)	// EARLY EXIT
 				{
-					//TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Add byte to buffer"));
-					buffer[bufferIndex] = byte;
-					++bufferIndex;
+					Buffer[BufferIndex] = Byte;
+					++BufferIndex;
+					continue;
+				}
+			
+				//at this point we are sure Byte == Expected
+				if (Expected == ';')
+				{
+					Buffer[BufferIndex] = 0; // Add termination marker to buffer
+					Station = UTF8_TO_TCHAR(Buffer);
+					Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+					BufferIndex = 0;
+					Expected = '\n';
+				}
+				else // there are only two options - either expected is ; or \n
+				{
+					Buffer[BufferIndex] = 0; // Add termination marker to buffer
+					double Value = FCStringAnsi::Atof(Buffer);
+					Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+					BufferIndex = 0;
+					Expected = ';';
+					
+					//here add value to TMap
+					FBRCStruct_Naive* row = row = Data.Find(Station);
+				
+					if (row != nullptr)
+					{
+						row->min = row->min < Value ? row->min : Value;
+						row->max = row->max > Value ? row->max : Value;
+						row->avg = (row->avg * row->count + Value) / (row->count + 1);
+						row->count = row->count + 1; 
+					}
+					else
+					{
+						Data.Add(Station, FBRCStruct_Naive(Value));
+					}
 				}
 			}
 		}
@@ -335,6 +292,103 @@ void UChallengeFunctionLibrary::BRC_Chunk(const FString& InInputName)
 		{
 			FBRCStruct_Naive* row = Data.Find(key);
 			UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *key, row->min, row->avg, row->max);
+		}
+	}
+	
+	File->Close();
+	delete File;
+}
+
+void UChallengeFunctionLibrary::BRC_Hash(const FString& InInputName)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UChallengeFunctionLibrary::BRC_Hash"));
+	// open file
+	FArchive* File;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Open file"));
+		const FString Path = FPaths::ProjectContentDir() + TEXT("Data/") + InInputName;
+		File = IFileManager::Get().CreateFileReader(*Path);
+	}
+	
+	// Prepare RET
+	TMap<FByteKey, FBRCStruct_Naive> Data;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Read File >> Data"));
+		
+		// 100 bytes, plus termination symbol
+		constexpr int BufferSize = 101;
+		ANSICHAR Buffer[BufferSize];
+		// buffer is null-terminated, so making last character null should work just fine
+		Buffer[0] = 0;
+		int BufferIndex = 0;
+		ANSICHAR Expected = ';';	// double-use as Stage flag
+		
+		FByteKey Station;	// need to keep this one through Loop iterations
+
+		while(!File->AtEnd())
+		{
+			ANSICHAR Byte;
+			// this line stream from File to byte. Do not ask.
+			*File << Byte;
+			
+			if(Byte != Expected)	// EARLY EXIT
+			{
+				TRACE_CPUPROFILER_EVENT_SCOPE_CONDITIONAL(TEXT("BRC_Hash::Detailed log check"), false);
+				Buffer[BufferIndex] = Byte;
+				++BufferIndex;
+				continue;
+			}
+			
+			//at this point we are sure Byte == Expected
+			if (Expected == ';')
+			{
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				for (int i = 0; Buffer[i]; ++i)
+					Station.Buffer[i] = Buffer[i];
+				Station.Buffer[BufferIndex] = 0;
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = '\n';
+			}
+			else // there are only two options - either expected is ; or \n
+			{
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				double Value = FCStringAnsi::Atof(Buffer);
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = ';';
+					
+				//here add value to TMap
+				FBRCStruct_Naive* row = Data.Find(Station);
+				if (row != nullptr)
+				{
+					row->min = row->min < Value ? row->min : Value;
+					row->max = row->max > Value ? row->max : Value;
+					row->avg = (row->avg * row->count + Value) / (row->count + 1);
+					row->count = row->count + 1; 
+				}
+				else
+				{
+					Data.Add(Station, FBRCStruct_Naive(Value));
+				}
+			}
+		}
+	}	
+			
+	// sort
+	TArray<FByteKey> SortedKeys;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Sorting data"));
+		Data.GetKeys(SortedKeys);
+		SortedKeys.Sort();
+	}
+	
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Printing data"));
+		for (auto key : SortedKeys)
+		{
+			FBRCStruct_Naive* row = Data.Find(key);
+			UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *key.ToString(), row->min, row->avg, row->max);
 		}
 	}
 	

@@ -18,6 +18,44 @@ struct FBRCStruct_Naive
 	double count;
 };
 
+struct FByteKey
+{
+	ANSICHAR Buffer[101];	// 100 bytes + termination marker
+	
+    bool operator==(const FByteKey& Other) const
+    {
+    	for(int i = 0; Buffer[i] && Other.Buffer[i]; i++)
+    	{
+    		if(Buffer[i] != Other.Buffer[i])
+    			return false;
+    	}
+        return true;
+    }
+	
+	bool operator<(const FByteKey& Other) const
+    {
+	    int i = 0;
+    	for ( ; Buffer[i] != Other.Buffer[i] && i < 100; ++i)
+    		;	// get to first i at which Buffers differ
+    	return Buffer[i] < Other.Buffer[i];
+    }
+	
+    friend uint32 GetTypeHash(const FByteKey& Key)
+    {
+        uint32 Hash = 0;
+        for(int i = 0; Key.Buffer[i]; ++i)
+        	Hash = Hash * 31 + Key.Buffer[i]; 
+    	
+        return Hash;
+    }
+	
+	FString ToString() const
+    {
+    	return UTF8_TO_TCHAR(Buffer);
+    }
+};
+
+
 /**
  * 
  */
@@ -37,6 +75,10 @@ public:
 	// Load 4096 bytes at once. Should give CPU more time between calls to hard disc.
     UFUNCTION(BlueprintCallable)
     static void BRC_Chunk(const FString& InInputName);
+    
+    // Uses char[] instead of FString as TMap key
+    UFUNCTION(BlueprintCallable)
+    static void BRC_Hash(const FString& InInputName);
 	
 	// Using Load File To String Array. Should massively increase RAM usage, checking how it will affect CPU usage
 	UFUNCTION(BlueprintCallable)
