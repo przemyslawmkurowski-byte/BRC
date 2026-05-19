@@ -396,6 +396,103 @@ void UChallengeFunctionLibrary::BRC_Hash(const FString& InInputName)
 	delete File;
 }
 
+void UChallengeFunctionLibrary::BRC_Hash_MappedFile(const FString& InInputName)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UChallengeFunctionLibrary::BRC_Hash_MappedFile"));
+	// open file
+	TUniquePtr<IMappedFileHandle> MappedFileHandle;
+	TUniquePtr<IMappedFileRegion> File;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Hash_MappedFile::Open file"));
+		const FString Path = FPaths::ProjectContentDir() + TEXT("Data/") + InInputName;
+		
+		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+		MappedFileHandle = TUniquePtr<IMappedFileHandle>(PlatformFile.OpenMapped(*Path));
+		File = TUniquePtr<IMappedFileRegion>(MappedFileHandle->MapRegion(0, MappedFileHandle->GetFileSize()));
+	}
+	
+	// Prepare RET
+	TMap<FByteKey, FBRCStruct_Naive> Data;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Hash_MappedFile::Read File >> Data"));
+		
+		// 100 bytes, plus termination symbol
+		constexpr int BufferSize = 101;
+		ANSICHAR Buffer[BufferSize];
+		// buffer is null-terminated, so making last character null should work just fine
+		Buffer[0] = 0;
+		int BufferIndex = 0;
+		ANSICHAR Expected = ';';	// double-use as Stage flag
+		
+		FByteKey Station;	// need to keep this one through Loop iterations
+		
+		const uint8* RawData = File->GetMappedPtr();
+		int64 FileSize = File->GetMappedSize();
+		
+		for (int64 i = 0; i < FileSize; ++i)
+		{
+			if (RawData[i] != Expected)
+			{
+				TRACE_CPUPROFILER_EVENT_SCOPE_CONDITIONAL(TEXT("BRC_Hash_MappedFile::Detailed log check"), false);
+				Buffer[BufferIndex] = RawData[i];
+				++BufferIndex;
+				continue;
+			}
+			
+			//at this point we are sure Byte == Expected
+			if (Expected == ';')
+			{
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				for (int j = 0; Buffer[j]; ++j)
+					Station.Buffer[j] = Buffer[j];
+				Station.Buffer[BufferIndex] = 0;
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = '\n';
+			}
+			else // there are only two options - either expected is ; or \n
+			{
+				Buffer[BufferIndex] = 0; // Add termination marker to buffer
+				double Value = FCStringAnsi::Atof(Buffer);
+				Buffer[0] = 0; // just to be sure - clear buffer by putting termination at first index
+				BufferIndex = 0;
+				Expected = ';';
+					
+				//here add value to TMap
+				FBRCStruct_Naive* row = Data.Find(Station);
+				if (row != nullptr)
+				{
+					row->min = row->min < Value ? row->min : Value;
+					row->max = row->max > Value ? row->max : Value;
+					row->avg = (row->avg * row->count + Value) / (row->count + 1);
+					row->count = row->count + 1; 
+				}
+				else
+				{
+					Data.Add(Station, FBRCStruct_Naive(Value));
+				}
+			}
+		}
+	}	
+			
+	// sort
+	TArray<FByteKey> SortedKeys;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Sorting data"));
+		Data.GetKeys(SortedKeys);
+		SortedKeys.Sort();
+	}
+	
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("BRC_Naive::Printing data"));
+		for (auto key : SortedKeys)
+		{
+			FBRCStruct_Naive* row = Data.Find(key);
+			UE_LOG(LogTemp, Error, TEXT("%s;%.1f;%.1f;%.1f"), *key.ToString(), row->min, row->avg, row->max);
+		}
+	}
+}
+
 void UChallengeFunctionLibrary::BRC_LFTSA(const FString& InInputName)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("UChallengeFunctionLibrary::BRC_LFTSA"));

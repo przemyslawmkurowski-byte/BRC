@@ -80,6 +80,10 @@ public:
     UFUNCTION(BlueprintCallable)
     static void BRC_Hash(const FString& InInputName);
 	
+	// As above, but with direct pointer to file
+	UFUNCTION(BlueprintCallable)
+	static void BRC_Hash_MappedFile(const FString& InInputName);
+	
 	// Using Load File To String Array. Should massively increase RAM usage, checking how it will affect CPU usage
 	UFUNCTION(BlueprintCallable)
     static void BRC_LFTSA(const FString& InInputName);
