@@ -35,7 +35,7 @@ struct FByteKey
 	bool operator<(const FByteKey& Other) const
     {
 	    int i = 0;
-    	for ( ; Buffer[i] != Other.Buffer[i] && i < 100; ++i)
+    	for ( ; Buffer[i] == Other.Buffer[i] && i < 100; ++i)
     		;	// get to first i at which Buffers differ
     	return Buffer[i] < Other.Buffer[i];
     }
